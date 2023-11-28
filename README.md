@@ -12,7 +12,7 @@ Once you have downloaded it, save the file on the data directory within the DS_V
 You can install the environment on a Windows machine from the [DS_Viz_Env.yml](https://github.com/epz0/DS_Viz/blob/main/env/DS_Viz_Env.yml) file. To install the environment on via Conda you can run the following code:
 
 ```
-$ conda env create -f DS_Viz_Env.yml
+$ conda create --name <env> --file DS_Viz_Env.yml
 ```
 
 It will install all packages used with the exception of the gower package that has to be installed via pip:
