@@ -7,7 +7,7 @@ Functions:
     get_weights: Function to get the weights for the Gower/Jaccard distances run.
     metrics_weights_comparison_specificpos: Runs the comparison accross the different weights comparing the solutions that are at specific distances from each other.
     metrics_weights_comparison_specificsols: Runs the comparison of the specific solutions distances across the different m etrics weights.
-    distance_hidim_embed_distort: Runs the distortion between
+    distance_hidim_embed_distort: Compares the high dimensional distance matrix with the matrix from the low dimensional embedding.
 """
 
 from pathlib import Path
@@ -22,6 +22,10 @@ from design_space.dist_matrix import *
 from design_space.dim_reduction import *
 from design_space.design_space import *
 
+from sklearn.metrics import cohen_kappa_score, mean_squared_error
+from scipy.spatial import procrustes
+from itertools import combinations
+from scipy import stats
 
 
 def get_indices_of_k_smallest(arr, k):
@@ -387,7 +391,7 @@ def metrics_weights_comparison_specificsols(dir_data, filenm, df, list_sols, she
 
     print('Running validation for the specific solutions in different Gower/Jaccard weights - done!')
 
-def distance_hidim_embed_distort(dir_data, filenm, df, mult_runs=False, NN_ls=None, MD_ls=None):
+def distance_hidim_embed_distort(dir_data, filenm, df, mult_runs=False, NN_ls=None, MD_ls=None, Dens_ls=None):
     """Calculates the distortion given by embedding the multidimensional space into a 2D plane.
 
     Args:
@@ -396,7 +400,8 @@ def distance_hidim_embed_distort(dir_data, filenm, df, mult_runs=False, NN_ls=No
         df (dataframe): Dataframe with the analysis for the solutions.
         mult_runs (bool, optional): Argument to specify if multiple runs will be performed. Defaults to False.
         NN_ls (float, optional): List of Number of Neighbors parameters to be passed onto the UMAP. Defaults to pre-specified list.
-        MD_ls (float, optional): List of Number of Neighbors parameters to be passed onto the UMAP. Defaults to pre-specified list.
+        MD_ls (float, optional): List of Minimum Distance parameters to be passed onto the UMAP. Defaults to pre-specified list.
+        Dens_ls (float, optional): List of Density Lambda parameters to be passed onto the UMAP (densMAP). Defaults to pre-specified list.
     """
 
     df_gow_weights, df_jac_weights = get_weights(dir_data, filenm)
@@ -455,43 +460,37 @@ def distance_hidim_embed_distort(dir_data, filenm, df, mult_runs=False, NN_ls=No
         df_distort.to_excel(writer, sheet_name='Weights_Distort', index=False)
 
     #* evals diff NN, MDs for each Weight Type
-    #* takes a long time (24*9*4 UMAPs will be calculalted)
+    #* takes a long time (12*9*4 UMAPs will be calculalted)
     if mult_runs is True:
         summary_list=[]
 
         if NN_ls is None:
-            NN_ls = range(10, 120, 5)
+            NN_ls = range(10, 70, 10)
 
         if MD_ls is None:
             MD_ls = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
 
+        if Dens_ls is None:
+            Dens_ls = [0.1, 1, 2, 3, 4, 5]
+
         for m in range(len(df_gow_weights['gowerW'])):
-            for neig in NN_ls:
-                for mind in MD_ls:
-                    embedding_umap, DS_graph = create_embedding(dir_data, hd_dmatrix_lst[m], embed_name=(df_gow_weights['WTp'][m]), NN=neig, MD=mind)
-                    n_dmatrix_embed =  create_dmatrix_from_embed(dir_data, embedding_umap, embed_name=(df_gow_weights['WTp'][m]), NN=neig, MD=mind)
+            for dlamb in Dens_ls:
+                for neig in NN_ls:
+                    for mind in MD_ls:
+                        embedding_umap, DS_graph = create_embedding(dir_data, hd_dmatrix_lst[m], embed_name=(df_gow_weights['WTp'][m]), NN=neig, MD=mind, densm=dlamb)
+                        n_dmatrix_embed =  create_dmatrix_from_embed(dir_data, embedding_umap, embed_name=(df_gow_weights['WTp'][m]), NN=neig, MD=mind, Dens=dlamb)
 
+                        #! comparison
+                        pearsoncorrel = sp.stats.mstats.pearsonr(hd_dmatrix_lst[m], n_dmatrix_embed)
+                        mse = mean_squared_error(hd_dmatrix_lst[m], n_dmatrix_embed)
 
-                    #! calc distort
-                    #* spread, absolute
-                    #* abs(D[hidim] - D[umap])
-                    #* --> closer to zero --> better
-                    pearsoncorrel = sp.stats.mstats.pearsonr(hd_dmatrix_lst[m], n_dmatrix_embed)
-
-                    spread_abs = abs(hd_dmatrix_lst[m] - n_dmatrix_embed)
-
-                    distort_umap = spread_abs.mean()*100/hd_dmatrix_lst[m].mean()
-
-                    summary_list.append(f'{df_gow_weights["WTp"][m]}, NN: {neig}, MD: {mind}, distort={distort_umap}, pearsoncorre={pearsoncorrel}')
+                        summary_list.append(f'{df_gow_weights["WTp"][m]}, NN: {neig}, MD: {mind}, densmap: {dlamb}, mse={mse}, pearsoncorre={pearsoncorrel}')
 
         df_multdistort = pd.DataFrame(summary_list)
         with pd.ExcelWriter(f'{dir_val}/DS_Distort_HD_Embed_mult.xlsx') as writer:                                             # create file
             df_multdistort.to_excel(writer, sheet_name='Mult_Distort', index=False)
 
-    print(df_distort)
-
     print('Running hidim/embed dmatrix validation - done!')
-    #print(df_distort)
 
 
 
