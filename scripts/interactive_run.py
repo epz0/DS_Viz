@@ -16,7 +16,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 
 #* --- initial definitions ------
-my_dir = Path(r'C:/DS_Viz/data')                                            # path to the data file
+my_dir = Path(r'C:/Py/DS_Viz/data')                                            # path to the data file
 filenm = 'dataset.xlsx'                                                     # name of the data file
 sheetnm = 'data'                                                            # sheet where the data (analysis) is
 #* ------------------------------

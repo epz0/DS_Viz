@@ -1,13 +1,9 @@
-"""The validation_distmetric runs the comparisons across different weights to see how solutions get spaced out.
+"""The validation_viz has functions to help the visualisation and setup of validation plots.
 
 Functions:
-    get_indices_of_k_smallest: Function to reorder the distance matrix and get the points at the smallest distance from each other.
-    get_indices_of_k_largest: Function to reorder the distance matrix and get the points at the largest distance from each other.
-    drop_duplicated_points: Function to drop duplicated points from a list of points [(a,b), (c,d), (b,a)] --> [(a,b), (c,d)].
-    get_weights: Function to get the weights for the Gower/Jaccard distances run.
-    metrics_weights_comparison_specificpos: Runs the comparison accross the different weights comparing the solutions that are at specific distances from each other.
-    metrics_weights_comparison_specificsols: Runs the comparison of the specific solutions distances across the different m etrics weights.
-    distance_hidim_embed_distort: Runs the distortion between
+   prep_plot: Returns the x and y limits for the plot, given a specific 2D embedding.
+   multiplot_stp: Setup for a multiplot, returns the axis that will be shared across all subplots.
+   plot_spec_sols_difweights: Highlights specific solutions across embeddings created using different distance weights. 
 """
 
 from pathlib import Path
@@ -22,8 +18,6 @@ from design_space.dist_matrix import *
 from design_space.dim_reduction import *
 from design_space.design_space import *
 from validation.validation_distmetric import *
-
-
 
 def prep_plot(df, embed):
     """Returns the limits that will be used in the plotting.
@@ -67,7 +61,6 @@ def multiplot_stp(x_lim, y_lim):
     axbase.set_xticks([])
     axbase.set_yticks([])
     return axbase
-
 
 def plot_spec_sols_difweights(dir_data, filenm, df, list_sols, df_colors, embed=None, sheetgow=None, sheetjac=None, save_val=True):
     """PLots a list of solutions across the different metrics weights.

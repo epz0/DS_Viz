@@ -411,9 +411,9 @@ def plot_post(dir_data, df, pt_cvxh, embed, df_colors, df_DS_vertx, save_plot=Fa
 
             if mult_plot is not None:
                 # plot annotations
-                plt.title(f'DS-Viz ({pt_unique[i]} | 256 Part | 100 gallery), Post, all results, {mult_plot}', fontsize=16, fontweight='bold')
+                plt.title(f'DS-Viz ({pt_unique[i]} Post, all results, {mult_plot})', fontsize=16, fontweight='bold')
             else:
-                plt.title(f'DS-Viz ({pt_unique[i]} | 256 Part | 100 gallery), Post, all results', fontsize=16, fontweight='bold')
+                plt.title(f'DS-Viz ({pt_unique[i]} Post, all results)', fontsize=16, fontweight='bold')
 
         #plt.show()
         if save_plot == True:
