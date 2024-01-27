@@ -16,16 +16,16 @@ import pandas as pd
 import umap
 
 
-
-def create_embedding(dir_data, dmatrix, embed_name=None, NN=60, MD=0.25):
+def create_embedding(dir_data, dmatrix, embed_name=None, Wg='W2', NN=60, MD=0.25, densm=False):
     """Returns embedding of distance matrix and its graph object.
 
     Args:
         dir_data (path): Path to the directory with the data file.
         dmatrix (NPArray): Normalised, pairwise distance matrix.
         embed_name (string, optional): Name of the embedding that should be created. Defaults to None.
-        NN (int, optional): Number of neighbors parameter for the UMAP embedding. Defaults to 60 (from validation process).
-        MD (float, optional): Number of minimum distance parameter for the UMAP embedding. Defaults to 0.25 (from validation process).
+        NN (int, optional): Number of neighbors parameter for the UMAP embedding. Defaults to 120 (from validation process).
+        MD (float, optional): Number of minimum distance parameter for the UMAP embedding. Defaults to 0.3 (from validation process).
+        densm (float, optional): Defaults to false. Expectes float to be passed onto the dens_lambda parameter.
 
     Returns:
         embedding_umap: Matrix with the embedding (x,y points) calculated from UMAP.
@@ -35,9 +35,9 @@ def create_embedding(dir_data, dmatrix, embed_name=None, NN=60, MD=0.25):
     dir_exp = Path(f'{dir_data.parent}/export')
 
     if embed_name is None:
-        embed_name = f'{NN}_{MD}'
+        embed_name = f'{Wg}_{NN}_{MD}_dM{densm}'
     else:
-        embed_name = f'{embed_name}_{NN}_{MD}'
+        embed_name = f'{embed_name}_{NN}_{MD}_dM{densm}'
 
     # check if graph/embedding already exists
     # Read graph if it exists
@@ -57,42 +57,80 @@ def create_embedding(dir_data, dmatrix, embed_name=None, NN=60, MD=0.25):
                                     )
 
     else:
-        print('Calculating new UMAP...')
+        print(f'Calculating new UMAP, densMAP={densm}...')
+        if densm == False:
+            # create new embedding/graph
+            #*set dim redux parameters [VIZ]
+            reducer = umap.UMAP(n_components = 2,
+                                metric='precomputed',       #* metric precomputed (square matrix)
+                                min_dist=MD,                #* dist between embedded points, higher less overlap between points default=0.1
+                                n_neighbors=NN,             #* larger --> more global usually between 5-100
+                                random_state=143,           # for reproduceability
+                                #repulsion_strength=1,      #* default
+                                #n_epochs=1000,             #* 500 for small datasets
+                                #spread=1,                  #* default
+                                #init='spectral',
+                                n_jobs=-1)
 
-        # create new embedding/graph
-        #*set dim redux parameters [VIZ]
-        reducer = umap.UMAP(n_components = 2,
-                            metric='precomputed',       #* metric precomputed (square matrix)
-                            min_dist=MD,                #* dist between embedded points, higher less overlap between points default=0.1
-                            n_neighbors=NN,             #* larger --> more global usually between 5-100
-                            random_state=143,           # for reproduceability
-                            #repulsion_strength=1,      #* default
-                            #n_epochs=1000,             #* 500 for small datasets
-                            #spread=1,                  #* default
-                            #init='spectral',
-                            n_jobs=-1)
+            embedding_umap = reducer.fit_transform(dmatrix) #! return
 
-        embedding_umap = reducer.fit_transform(dmatrix) #! return
+            #* export umap graph
+            df_embed = pd.DataFrame(embedding_umap, columns=['x','y'])
 
-        #* export umap graph
-        df_embed = pd.DataFrame(embedding_umap, columns=['x','y'])
+            coo_graph = reducer.graph_.tocoo()
+            graph = pd.DataFrame(np.vstack([coo_graph.row, coo_graph.col, coo_graph.data]).T,
+                                    columns=('source', 'target', 'weight'))
+            graph.to_pickle(f'{dir_exp}/DS_{embed_name}.pkl')
 
-        coo_graph = reducer.graph_.tocoo()
-        graph = pd.DataFrame(np.vstack([coo_graph.row, coo_graph.col, coo_graph.data]).T,
-                                columns=('source', 'target', 'weight'))
-        graph.to_pickle(f'{dir_exp}/DS_{embed_name}.pkl')
+            #* assign graph
+            DS_graph = igraph.Graph.TupleList(
+                                        graph.itertuples(index=False),
+                                        directed = False,
+                                        edge_attrs= ['weight']
+                                        )                   #! return
 
-        #* assign graph
-        DS_graph = igraph.Graph.TupleList(
-                                    graph.itertuples(index=False),
-                                    directed = False,
-                                    edge_attrs= ['weight']
-                                    )                   #! return
+            #! export umap embedding df as csv
+            df_embed.to_csv(f'{dir_exp}/DS_{embed_name}.csv')
 
-        #! export umap embedding df as csv
-        df_embed.to_csv(f'{dir_exp}/DS_{embed_name}.csv')
+        else:
+            #** densmap = true
+            # create new embedding/graph
+            #*set dim redux parameters [VIZ]
+            reducer = umap.UMAP(densmap=True,
+                                dens_lambda=densm,
+                                n_components = 2,
+                                metric='precomputed',       #* metric precomputed (square matrix)
+                                min_dist=MD,                #* dist between embedded points, higher less overlap between points default=0.1
+                                n_neighbors=NN,             #* larger --> more global usually between 5-100
+                                random_state=143,           # for reproduceability
+                                #repulsion_strength=1,      #* default
+                                #n_epochs=1000,             #* 500 for small datasets
+                                #spread=1,                  #* default
+                                #init='spectral',
+                                n_jobs=-1)
+
+            embedding_umap = reducer.fit_transform(dmatrix) #! return
+
+            #* export umap graph
+            df_embed = pd.DataFrame(embedding_umap, columns=['x','y'])
+
+            coo_graph = reducer.graph_.tocoo()
+            graph = pd.DataFrame(np.vstack([coo_graph.row, coo_graph.col, coo_graph.data]).T,
+                                    columns=('source', 'target', 'weight'))
+            graph.to_pickle(f'{dir_exp}/DS_{embed_name}.pkl')
+
+            #* assign graph
+            DS_graph = igraph.Graph.TupleList(
+                                        graph.itertuples(index=False),
+                                        directed = False,
+                                        edge_attrs= ['weight']
+                                        )                   #! return
+
+            #! export umap embedding df as csv
+            df_embed.to_csv(f'{dir_exp}/DS_{embed_name}.csv')
         print('UMAP embedding generated!')
     return embedding_umap, DS_graph
+
 
 def plot_embedding(dir_data, embed, df, embed_name='60_0.25'):
     """Plots the embeeding generated and saves the image as .png.

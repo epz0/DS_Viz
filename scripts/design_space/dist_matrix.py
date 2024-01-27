@@ -141,7 +141,7 @@ def calc_distmatrix(df, dir_data, fname, sheetjac=None, sheetgow=None, jacweight
 
     return n_distmatrix
 
-def create_dmatrix_from_embed(dir_data, embed=None, embed_name=None, NN=None, MD=None, norm=True):
+def create_dmatrix_from_embed(dir_data, embed=None, embed_name=None, NN=None, MD=None, Dens=None, norm=True):
     """Returns a normalised distance matrix from a 2D embedding.
 
     Args:
@@ -163,10 +163,10 @@ def create_dmatrix_from_embed(dir_data, embed=None, embed_name=None, NN=None, MD
             embed_name = 'DS_50_0.3'                                   # default values of NN and MD
             print (f'Using default embed configuration/name {embed_name}...')
         else:
-            if NN is not None and MD is not None:
+            if NN is not None and MD is not None and Dens is not None:
+                embed_name = f'DS_{embed_name}_{NN}_{MD}_dM{Dens}'
+            elif NN is not None and MD is not None and Dens is None:
                 embed_name = f'DS_{embed_name}_{NN}_{MD}'
-            else:
-                embed_name = f'DS_{embed_name}_50_0.3'
 
         # check if graph/embedding already exists
         # Read graph if it exists
