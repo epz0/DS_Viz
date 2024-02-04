@@ -150,4 +150,4 @@ dependencies:
   - zstd=1.5.5=hd43e919_0
   - pip:
       - gower==0.1.2
-prefix: C:\Users\EDC\miniconda3\envs\DS_Viz_Env
+prefix: ...\miniconda3\envs\DS_Viz_Env
