@@ -1,5 +1,11 @@
 # DS-Viz: A Method for Visualising Design Spaces
 
+## Demo
+For a demo version of the deployment of DS-Viz with the GAP Dataset please follow [this link](https://ds-viz-2f318a02ee60.herokuapp.com/)./
+/
+In this demo, you can select different participants and inspect the area they covered, the sequence of the ideas they created (arrows)./
+Upon clicking on the points you can inspect the details of their ideas. 
+
 ## Method overview
 ![DS_Viz](https://github.com/epz0/DS_Viz/blob/main/data/images/DS_Viz.png)
 
